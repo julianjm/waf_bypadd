@@ -10,6 +10,7 @@ Many WAFs only analyze the first few kilobytes of an HTTP request. By filling th
 
 - Ability to add a configurable amount of padding to the POST payloads.
 - Configurable settings to choose which Burp Suite tools the extension will work on (Proxy, Scanner, Repeater).
+- Supports URL Encoded, Multipart, JSON and XML requests.
 
 ## Installation
 

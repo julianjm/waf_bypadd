@@ -28,6 +28,9 @@ class BurpExtender(IBurpExtender, IHttpListener, ITab):
         self.NAME = "WAF Bypadd"
         self.AUTHOR = "Julian J. M."
         self.EMAIL = "julianjm@gmail.com"
+        self.TWITTER = "@julianjm512"
+        self.GITHUB = "https://github.com/julianjm"
+        self.VERSION = "0.9"
         return
 
     def registerExtenderCallbacks(self, callbacks):
@@ -55,10 +58,11 @@ class BurpExtender(IBurpExtender, IHttpListener, ITab):
         # Set maximum width and height
         infoPanel.setMaximumSize(Dimension(500, 120))
         infoPanel.setBorder(BorderFactory.createTitledBorder("About"))
-        infoPanel.add(JLabel("Author: Julian J. M."))
-        infoPanel.add(JLabel("Email: julianjm@gmail.com"))
-        infoPanel.add(JLabel("Twitter: @julianjm512"))
-        infoPanel.add(JLabel("Github: https://github.com/julianjm"))
+        infoPanel.add(JLabel(self.NAME + ' v' + self.VERSION))
+        infoPanel.add(JLabel("Author: "+ self.AUTHOR))
+        infoPanel.add(JLabel("Email: "+ self.EMAIL))
+        infoPanel.add(JLabel("Twitter: "+ self.TWITTER))
+        infoPanel.add(JLabel("Github: "+ self.GITHUB))
 
         # Configuration options
         configPanel = JPanel(GridLayout(0, 1))
