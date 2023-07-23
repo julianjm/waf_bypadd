@@ -1,10 +1,10 @@
 from burp import IBurpExtender
-from burp import IHttpListener
+from burp import IHttpListener, IProxyListener
 from burp import ITab
 from burp import IRequestInfo
 from java.io import PrintWriter
 from javax.swing import JPanel, JCheckBox, JLabel, JTextField, BoxLayout, Box, BorderFactory
-from java.awt import GridLayout, FlowLayout, Dimension
+from java.awt import GridLayout, Dimension
 from java.awt.event import FocusAdapter
 import re
 
@@ -16,7 +16,7 @@ import re
 # Github: https://github.com/julianjm
 
 
-class BurpExtender(IBurpExtender, IHttpListener, ITab):
+class BurpExtender(IBurpExtender, IHttpListener, ITab, IProxyListener):
 
     # constructor
     def __init__(self):
@@ -42,6 +42,7 @@ class BurpExtender(IBurpExtender, IHttpListener, ITab):
 
         callbacks.setExtensionName(self.NAME)
         callbacks.registerHttpListener(self)
+        callbacks.registerProxyListener(self)
 
         self.setupGUI()
 
@@ -59,10 +60,10 @@ class BurpExtender(IBurpExtender, IHttpListener, ITab):
         infoPanel.setMaximumSize(Dimension(500, 120))
         infoPanel.setBorder(BorderFactory.createTitledBorder("About"))
         infoPanel.add(JLabel(self.NAME + ' v' + self.VERSION))
-        infoPanel.add(JLabel("Author: "+ self.AUTHOR))
-        infoPanel.add(JLabel("Email: "+ self.EMAIL))
-        infoPanel.add(JLabel("Twitter: "+ self.TWITTER))
-        infoPanel.add(JLabel("Github: "+ self.GITHUB))
+        infoPanel.add(JLabel("Author: " + self.AUTHOR))
+        infoPanel.add(JLabel("Email: " + self.EMAIL))
+        infoPanel.add(JLabel("Twitter: " + self.TWITTER))
+        infoPanel.add(JLabel("Github: " + self.GITHUB))
 
         # Configuration options
         configPanel = JPanel(GridLayout(0, 1))
@@ -133,20 +134,26 @@ class BurpExtender(IBurpExtender, IHttpListener, ITab):
         self.intercept_repeater = self.repeater_check.isSelected()
         print("Intercept repeater: " + str(self.intercept_repeater))
 
-    # burp extender callback
+    def processProxyMessage(self, messageIsRequest, message):
+        if not messageIsRequest:
+            return
+
+        if not self.intercept_proxy:
+            return
+
+        try:
+            self.handleMessage(message.getMessageInfo())
+        except Exception as e:
+            self.stderr.println("Error: " + str(e))
+            return
 
     def processHttpMessage(self, toolFlag, messageIsRequest, currentRequest):
         if not messageIsRequest:  # we process only requests
             return
 
-        # Ignore requests that are not in scope
-        if not self._callbacks.isInScope(currentRequest.getUrl()):
-            return
-
-        # Determine if the request should be processed based on the source tool (scanner, repeater, proxy, etc)
-        if toolFlag not in [self._callbacks.TOOL_PROXY, self._callbacks.TOOL_SCANNER, self._callbacks.TOOL_REPEATER]:
-            return
-        if (toolFlag == self._callbacks.TOOL_PROXY) and not self.intercept_proxy:
+        # Proxy messages are handled by processProxyMessage. We don't want to process them twice.
+        # Only check if the tool is Scanner or Repeater
+        if toolFlag not in [self._callbacks.TOOL_SCANNER, self._callbacks.TOOL_REPEATER]:
             return
         if (toolFlag == self._callbacks.TOOL_SCANNER) and not self.intercept_scanner:
             return
@@ -160,6 +167,10 @@ class BurpExtender(IBurpExtender, IHttpListener, ITab):
             return
 
     def handleMessage(self, currentRequest):
+        # Ignore requests that are not in scope
+        if not self._callbacks.isInScope(currentRequest.getUrl()):
+            return
+
         request_info = self._helpers.analyzeRequest(currentRequest)
         if request_info.getMethod() != 'POST':  # process only POST requests
             return
